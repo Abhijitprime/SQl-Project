@@ -231,7 +231,7 @@ from T1 a,T2 b
 where a.plans=b.plans
 
 
---12--Show Month,company name & ther  Pecent_of_Total_ms_change
+--13--Show Month,company name & ther  Pecent_of_Total_ms_change
 
 select  datename(month,(f.date))as Month_name,sum(f.ms_pct) as Total_MS_Pct,
 round(sum(f.ms_pct)*100/sum(sum(f.ms_pct)) over(),1) as Pecent_of_Total_MS_Pct
