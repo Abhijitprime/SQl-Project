@@ -3,16 +3,18 @@ select * from dim_plan
 select * from fact_atliqo_metrics
 select * from fact_market_share
 select * from dim_date
-select * from fact_plan_revenue
+select * from fact_plan_revenue;
 
 
 --1--show How many Telicom comapny are there with their total Market share %.
 
-with cte as 
-(select sum(ms_pct) as total from fact_market_share)
-select b.company,
+with tp as 
+(select sum(ms_pct) as total 
+from fact_market_share)
+
+select b.company,round(sum(ms_pct),2) as Total_MS_PCT ,
 round(sum(b.ms_pct*100/a.total),2) as percent_of_total 
-from fact_market_share b,cte a
+from fact_market_share b,tp a
 group by b.company
 
 --2-- What is Total & Avg Revenue & Avg revenue per user for Altiqo  telicom company.
@@ -239,26 +241,50 @@ from fact_market_share f
 group by date
 order by Total_MS_Pct desc,Pecent_of_Total_MS_Pct desc
 
---14-- what is % change and % of total ms_pct(Market share %) before/after installation of 5G
+
+
+--14-- what is % change_ms_pct(Market share %) before/after installation of 5G for companies.
 select * from dim_date
 select * from fact_market_share;
 
 
-
 with Tb1 as
-(select sum(ms_pct) as Total_ms_pct_Before_5G from fact_market_share f,dim_date d
+(select f.company,sum(ms_pct) as Total_ms_pct_Before_5G from fact_market_share f,dim_date d
 where f.date=d.date
-and d.before_after_5g='Before 5G')
---group by d.month_name
+and d.before_after_5g='Before 5G'
+group by f.company)
 ,
 Tb2 as
-(select sum(ms_pct) as Total_ms_pct_After_5G from fact_market_share f,dim_date d
+(select f.company,sum(ms_pct) as Total_ms_pct_After_5G from fact_market_share f,dim_date d
 where f.date=d.date
-and d.before_after_5g='After 5G')
---group by d.month_name
+and d.before_after_5g='After 5G'
+group by f.company)
 
-select a.Total_ms_pct_Before_5G as Total_ms_pct_Before_5G
+select a.company,a.Total_ms_pct_Before_5G as Total_ms_pct_Before_5G
 ,b.Total_ms_pct_After_5G as Total_ms_pct_After_5G,
 concat(round((b.Total_ms_pct_After_5G-a.Total_ms_pct_Before_5G)*100/a.Total_ms_pct_Before_5G,2),'%') as Percent_change
 from Tb1 a,Tb2 b
+where a.company=b.company
+
+--15--what is TMV and % change for cities after installation of 5G for different cities
+
+
+with Tb1 as
+(select d1.city_name,sum(tmv_city_crores) as Total_tmv_city_crores_Before_5G from fact_market_share f,dim_cities d1,dim_date d
+where f.date=d.date and d1.city_code=f.city_code
+and d.before_after_5g='Before 5G'
+group by d1.city_name)
+,
+Tb2 as
+(select d1.city_name,sum(tmv_city_crores) as Total_tmv_city_crores_After_5G from fact_market_share f,dim_cities d1,dim_date d
+where f.date=d.date and d1.city_code=f.city_code
+and d.before_after_5g='After 5G'
+group by d1.city_name)
+
+select a.city_name,a.Total_tmv_city_crores_Before_5G  as Total_tmv_city_crores_Before_5G 
+,b.Total_tmv_city_crores_After_5G as Total_tmv_city_crores_After_5G,
+concat(round((b.Total_tmv_city_crores_After_5G-a.Total_tmv_city_crores_Before_5G )*100/a.Total_tmv_city_crores_Before_5G ,2),'%') as Percent_change
+from Tb1 a,Tb2 b
+where a.city_name=b.city_name
+
 
