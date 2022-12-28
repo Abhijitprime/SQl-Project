@@ -1,9 +1,9 @@
 select * from dim_cities
-select * from dim_date
 select * from dim_plan
 select * from fact_atliqo_metrics
 select * from fact_market_share
-select * from fact_plan_revenue;
+select * from dim_date
+select * from fact_plan_revenue
 
 
 --1--show How many Telicom comapny are there with their total Market share %.
@@ -238,3 +238,27 @@ round(sum(f.ms_pct)*100/sum(sum(f.ms_pct)) over(),1) as Pecent_of_Total_MS_Pct
 from fact_market_share f
 group by date
 order by Total_MS_Pct desc,Pecent_of_Total_MS_Pct desc
+
+--14-- what is % change and % of total ms_pct(Market share %) before/after installation of 5G
+select * from dim_date
+select * from fact_market_share;
+
+
+
+with Tb1 as
+(select sum(ms_pct) as Total_ms_pct_Before_5G from fact_market_share f,dim_date d
+where f.date=d.date
+and d.before_after_5g='Before 5G')
+--group by d.month_name
+,
+Tb2 as
+(select sum(ms_pct) as Total_ms_pct_After_5G from fact_market_share f,dim_date d
+where f.date=d.date
+and d.before_after_5g='After 5G')
+--group by d.month_name
+
+select a.Total_ms_pct_Before_5G as Total_ms_pct_Before_5G
+,b.Total_ms_pct_After_5G as Total_ms_pct_After_5G,
+concat(round((b.Total_ms_pct_After_5G-a.Total_ms_pct_Before_5G)*100/a.Total_ms_pct_Before_5G,2),'%') as Percent_change
+from Tb1 a,Tb2 b
+
