@@ -8,16 +8,34 @@ insert into test1 values(1,'M ', 80 ,'1990'),(1,'M',82,'1991'),(1 ,'M',84,'1992'
 (1,'P',84,'1992'),
 (1,'P',72,'1993')
 
-select * from test1
-group by year,id,subject,marks;
 
-select a.year,a.marks,b.year,b.marks,(b.marks-a.marks/a.marks) as growth_over_year
-from test1 a
-left join test1 b
-on a.year=b.year
-and a.id=b.id
-and a.subject=b.subject
-order by a.year
+
+WITH data_with_year_over_year AS (
+    SELECT id, subject, Year, (Marks-(LAG(Marks) OVER (PARTITION BY subject ORDER BY year))) as growth_Marks_year_over_year 
+    FROM test1
+)
+SELECT id, subject, Year, growth_Marks_year_over_year
+FROM data_with_year_over_year
+where subject='M';
+
+WITH data_with_year_over_year AS (
+    SELECT id, subject, Year, (Marks-(LEAD(Marks) OVER (PARTITION BY id, subject ORDER BY Year))) as growth_Marks_year_over_year 
+    FROM test1
+)
+SELECT id, subject, Year, growth_Marks_year_over_year
+FROM data_with_year_over_year;
+
+
+
+select (year(Year)-1) as m from test1
+
+WITH data_with_year_over_year AS (
+    SELECT id, subject, Marks, Year, (year(Year)-1) as prev_year, 
+	(Marks-(SELECT Marks FROM test1 WHERE id=t1.id and subject=t1.subject and Year=t1.year(Year)-1)) as growth
+    FROM test1 t1
+)
+SELECT id, subject, Year, Marks,growth
+FROM data_with_year_over_year;
 
 
 
@@ -43,6 +61,9 @@ insert into cell2(id,mobilenumber,state) values
 
  select *,dense_rank()over(partition by mobilenumber order by id ) as rk from cell2;
 
+ select * from cell2
  select id,mobilenumber 
  from (select *,dense_rank()over(partition by mobilenumber  order by id ) as rk from cell2)as temp
  where rk>2;
+
+
